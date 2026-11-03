@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Share2, Download, ArrowLeft, Loader } from 'lucide-react'
+import { Link2, Download, ArrowLeft, Loader } from 'lucide-react'
 import { useReviewStatus } from '../hooks/useReviewStatus'
 import { ReviewSection } from '../components/ReviewSection'
 import { apiClient } from '../services/api'
+import { copyToClipboard, createShareLink } from '../services/shareService'
 import { Review } from '../types'
 
 export const ReviewPage: React.FC = () => {
@@ -12,6 +13,9 @@ export const ReviewPage: React.FC = () => {
   const [fullReview, setFullReview] = useState<Review | null>(null)
   const { review: statusReview, isPolling, error } = useReviewStatus(reviewId || '')
   const [fetchError, setFetchError] = useState('')
+  const [isSharing, setIsSharing] = useState(false)
+  const [shareMessage, setShareMessage] = useState('')
+  const [shareError, setShareError] = useState('')
 
   useEffect(() => {
     if (!isPolling && statusReview?.status === 'complete') {
@@ -29,11 +33,26 @@ export const ReviewPage: React.FC = () => {
 
   const currentReview = fullReview || statusReview
 
-  const handleShare = () => {
-    const url = window.location.href
-    navigator.clipboard.writeText(url).then(() => {
-      alert('Review link copied to clipboard!')
-    })
+  const handleCopyLink = async () => {
+    if (!reviewId || isSharing) return
+
+    setIsSharing(true)
+    setShareMessage('')
+    setShareError('')
+
+    try {
+      const shareUrl = await createShareLink(reviewId)
+      await copyToClipboard(shareUrl)
+      setShareMessage('Link copied to clipboard!')
+    } catch (err) {
+      setShareError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to generate or copy the share link'
+      )
+    } finally {
+      setIsSharing(false)
+    }
   }
 
   const handleExport = () => {
@@ -112,11 +131,16 @@ ${section.suggestions.map((s) => `- ${s}`).join('\n')}
               <h1 className="text-3xl font-bold text-gray-900">Portfolio Review</h1>
               <div className="flex items-center gap-3">
                 <button
-                  onClick={handleShare}
-                  className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium rounded-lg transition-colors"
+                  onClick={handleCopyLink}
+                  disabled={isSharing}
+                  className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Share2 className="w-5 h-5" />
-                  Share
+                  {isSharing ? (
+                    <Loader className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <Link2 className="w-5 h-5" />
+                  )}
+                  {isSharing ? 'Generating...' : 'Copy link'}
                 </button>
                 <button
                   onClick={handleExport}
@@ -127,6 +151,18 @@ ${section.suggestions.map((s) => `- ${s}`).join('\n')}
                 </button>
               </div>
             </div>
+
+            {shareMessage && (
+              <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-sm text-green-800">{shareMessage}</p>
+              </div>
+            )}
+
+            {shareError && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-800">{shareError}</p>
+              </div>
+            )}
 
             {fullReview.overall_score !== undefined && (
               <div className="mb-8 bg-white rounded-lg shadow p-8">

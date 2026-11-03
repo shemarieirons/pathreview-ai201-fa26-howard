@@ -4,7 +4,12 @@ import structlog
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 
 from api.middleware.auth import get_current_user
-from api.schemas.review import ReviewCreate, ReviewListResponse, ReviewResponse
+from api.schemas.review import (
+    ReviewCreate,
+    ReviewListResponse,
+    ReviewResponse,
+    ShareLinkResponse,
+)
 from core.database import get_db
 from core.models.user import User
 from core.services.review_service import (
@@ -13,6 +18,7 @@ from core.services.review_service import (
     list_reviews,
     process_review,
 )
+from core.services.share_service import create_share_link
 
 log = structlog.get_logger()
 
@@ -173,4 +179,40 @@ async def get_review_status(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve review status",
+        )
+
+
+@router.post("/{review_id}/share", response_model=ShareLinkResponse)
+async def create_review_share_link(
+    review_id: UUID,
+    current_user: User = Depends(get_current_user),
+    db=Depends(get_db),
+):
+    """
+    Generate a public, read-only share link for a completed review.
+
+    The link expires exactly 30 days after creation. Requires authentication
+    and ownership of the review.
+    """
+    try:
+        share_link = await create_share_link(
+            db=db,
+            review_id=review_id,
+            user_id=current_user.id,
+        )
+
+        return ShareLinkResponse(
+            token=share_link.token,
+            expires_at=share_link.expires_at,
+            share_path=f"/share/{share_link.token}",
+        )
+
+    except HTTPException:
+        raise
+    except Exception as exc:
+        log.error("create_share_link_error", error=str(exc))
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create share link",
         )

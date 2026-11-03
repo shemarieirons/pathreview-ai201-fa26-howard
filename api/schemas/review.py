@@ -33,3 +33,20 @@ class ReviewListResponse(BaseModel):
     total: int
     page: int
     page_size: int
+
+
+class ShareLinkResponse(BaseModel):
+    """Response returned when an authenticated user creates a share link."""
+
+    token: str
+    expires_at: datetime
+    share_path: str
+
+
+class PublicReviewSummary(BaseModel):
+    """Read-only public summary exposed via a valid share token."""
+
+    status: str
+    overall_score: float | None
+    sections: list[FeedbackSection] | None
+    expires_at: datetime
