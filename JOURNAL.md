@@ -22,14 +22,14 @@ I chose Tier 2 because it matches my experience. I have built and shipped multi-
 
 **Cohort ledger:** [x] Issue added to cohort ledger
 
-## Unit 8 — Reproduction & solution planning
+## Unit 8 - Reproduction & solution planning
 
-**Reproduction commit link:** [link to commit documenting the reproduced issue]
+**Reproduction commit link:** https://github.com/shemarieirons/pathreview-ai201-fa26-howard/commit/e339f70
 
 **Reproduction summary:**
-[1–2 sentences: How did you reproduce the issue? What did you observe?]
+I checked out main, ran the app locally, and confirmed the review page has no share control and the API has no share route. Without a share feature, a summary can only be viewed by someone with account access.
 
-**PLAN.md link:** [link to PLAN.md in your fork]
+**PLAN.md link:** https://github.com/shemarieirons/pathreview-ai201-fa26-howard/blob/feature/40-copy-link-button/PLAN.md
 
-**Blockers or open questions:**
-[Anything you're still uncertain about going into Unit 9, or leave blank]
+**Walkthrough video (recommended):** "not recorded"
+
